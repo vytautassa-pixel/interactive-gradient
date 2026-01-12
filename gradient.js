@@ -34,6 +34,7 @@ uniform float u_noiseAmount;
 
 varying vec2 vUv;
 
+// Value noise
 float rand(vec2 n){ return fract(sin(dot(n, vec2(12.9898,4.1414)))*43758.5453); }
 float noise(vec2 p){
     vec2 ip = floor(p);
@@ -47,22 +48,26 @@ float noise(vec2 p){
 void main(){
     vec2 st = vUv - 0.5;
 
-    // subtle mouse offset
-    vec2 mouseOffset = (u_mouse - 0.5) * 0.1; // gentle parallax
-    st += mouseOffset;
+    // per-color subtle mouse offsets
+    vec2 mo1 = (u_mouse - 0.5) * 0.02;
+    vec2 mo2 = (u_mouse - 0.5) * 0.03;
+    vec2 mo3 = (u_mouse - 0.5) * 0.025;
+    vec2 mo4 = (u_mouse - 0.5) * 0.015;
 
-    // slow base morphing waves
-    float wave1 = sin((st.y + u_time*0.05) * 5.0 + st.x*3.0);
-    float wave2 = cos((st.x + u_time*0.03) * 4.0 + st.y*2.0);
-    float wave3 = sin((st.x + st.y + u_time*0.04)*6.0);
+    // Per-layer waves
+    float wave1 = sin((st.y + u_time*0.05) * 5.0 + st.x*3.0 + mo1.x + mo1.y);
+    float wave2 = cos((st.x + u_time*0.03) * 4.0 + st.y*2.0 + mo2.x - mo2.y);
+    float wave3 = sin((st.x + st.y + u_time*0.04)*6.0 + mo3.x - mo3.y);
+    float wave4 = cos((st.x - st.y + u_time*0.045)*5.5 + mo4.x + mo4.y);
 
-    float morph = (wave1 + wave2 + wave3)/3.0;
+    // Combine waves for smooth morph
+    float morph = (wave1 + wave2 + wave3 + wave4)/4.0;
     morph = morph*0.5 + 0.5;
 
-    // smooth color blending
-    vec3 color = mix(u_color1, u_color2, smoothstep(0.0,0.5,morph));
-    color = mix(color, u_color3, smoothstep(0.3,0.7,morph));
-    color = mix(color, u_color4, smoothstep(0.5,1.0,morph));
+    // Smooth color blending
+    vec3 color = mix(u_color1, u_color2, smoothstep(0.0,0.5,wave1));
+    color = mix(color, u_color3, smoothstep(0.3,0.7,wave2));
+    color = mix(color, u_color4, smoothstep(0.5,1.0,wave3));
 
     // subtle noise overlay
     color += vec3(noise(st*10.0 + u_time)*u_noiseAmount);
