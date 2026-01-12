@@ -1,42 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Interactive Gradient</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>Monopo Gradient Clone</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 
   <!-- Inter font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="gradient"></div>
-  <div class="gradient-noise"></div>
-
+  <!-- UI Panel -->
   <div class="ui">
     <div class="title">Interactive Gradient</div>
 
     <label>Colors</label>
     <div class="colors">
-      <input type="color" value="#ff6b6b" data-color="c1">
-      <input type="color" value="#5f27cd" data-color="c2">
-      <input type="color" value="#1dd1a1" data-color="c3">
+      <input type="color" value="#16254b" data-color="color1">
+      <input type="color" value="#23418a" data-color="color2">
+      <input type="color" value="#aadfd9" data-color="color3">
+      <input type="color" value="#e64f0f" data-color="color4">
     </div>
 
-    <label>Motion</label>
-    <input type="range" min="0.02" max="0.2" step="0.01" value="0.08" id="motion">
-
     <label>
-      <input type="checkbox" id="noiseToggle">
+      <input type="checkbox" id="noiseToggle" checked>
       Noise Overlay
     </label>
 
     <button id="copy">Copy Embed Code</button>
   </div>
+
+  <!-- Three.js Canvas -->
+  <canvas id="gradient-canvas"></canvas>
 
   <script src="gradient.js"></script>
 </body>
