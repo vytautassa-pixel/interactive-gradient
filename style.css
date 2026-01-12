@@ -1,0 +1,101 @@
+:root {
+  --x: 50%;
+  --y: 50%;
+  --dx: 0px;
+  --dy: 0px;
+
+  --c1: #ff6b6b;
+  --c2: #5f27cd;
+  --c3: #1dd1a1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  background: #050505;
+  font-family: Inter, system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* ===== Gradient ===== */
+
+.gradient {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      600px at calc(var(--x) + var(--dx)) calc(var(--y) + var(--dy)),
+      var(--c1),
+      transparent 60%
+    ),
+    radial-gradient(
+      800px at calc(100% - var(--x)) calc(100% - var(--y)),
+      var(--c2),
+      transparent 65%
+    ),
+    radial-gradient(
+      1000px at 50% 50%,
+      var(--c3),
+      #050505 70%
+    );
+  filter: blur(30px) saturate(120%);
+  transform: scale(1.1);
+}
+
+/* ===== UI ===== */
+
+.ui {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  width: 260px;
+  padding: 16px;
+  background: rgba(15, 15, 15, 0.6);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  color: white;
+  display: grid;
+  gap: 12px;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+label {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.colors {
+  display: flex;
+  gap: 8px;
+}
+
+input[type="color"] {
+  width: 100%;
+  height: 36px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+input[type="range"] {
+  width: 100%;
+}
+
+button {
+  margin-top: 8px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: white;
+  color: black;
+  font-weight: 500;
+  cursor: pointer;
+}
