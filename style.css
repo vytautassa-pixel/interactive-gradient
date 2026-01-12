@@ -1,8 +1,10 @@
 :root {
-  --x: 50%;
-  --y: 50%;
-  --dx: 0px;
-  --dy: 0px;
+  --x1: 50%;
+  --y1: 50%;
+  --x2: 50%;
+  --y2: 50%;
+  --x3: 50%;
+  --y3: 50%;
 
   --c1: #ff6b6b;
   --c2: #5f27cd;
@@ -22,32 +24,28 @@ body {
 }
 
 /* ===== Gradient ===== */
-
 .gradient {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(
-      600px at calc(var(--x) + var(--dx)) calc(var(--y) + var(--dy)),
-      var(--c1),
-      transparent 60%
-    ),
-    radial-gradient(
-      800px at calc(100% - var(--x)) calc(100% - var(--y)),
-      var(--c2),
-      transparent 65%
-    ),
-    radial-gradient(
-      1000px at 50% 50%,
-      var(--c3),
-      #050505 70%
-    );
-  filter: blur(30px) saturate(120%);
+    radial-gradient(600px at var(--x1,50%) var(--y1,50%), var(--c1), transparent 60%),
+    radial-gradient(800px at var(--x2,50%) var(--y2,50%), var(--c2), transparent 65%),
+    radial-gradient(1000px at var(--x3,50%) var(--y3,50%), var(--c3), #050505 70%);
+  filter: blur(40px) saturate(140%);
   transform: scale(1.1);
 }
 
-/* ===== UI ===== */
+.gradient-noise {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-radial-gradient(circle, rgba(255,255,255,0.02) 0 1px, transparent 2px);
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
 
+/* ===== UI ===== */
 .ui {
   position: fixed;
   top: 24px;
