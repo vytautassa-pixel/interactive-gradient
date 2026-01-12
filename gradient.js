@@ -34,7 +34,6 @@ uniform float u_noiseAmount;
 
 varying vec2 vUv;
 
-// Value noise functions
 float rand(vec2 n){ return fract(sin(dot(n, vec2(12.9898,4.1414)))*43758.5453); }
 float noise(vec2 p){
     vec2 ip = floor(p);
@@ -46,23 +45,27 @@ float noise(vec2 p){
 }
 
 void main(){
-    vec2 st = vUv - 0.5; // center
+    vec2 st = vUv - 0.5;
 
-    // Multi-layer oscillating displacement for liquid effect
-    float wave1 = sin((st.y + u_time*0.2) * 5.0 + st.x*3.0);
-    float wave2 = cos((st.x + u_time*0.3) * 4.0 + st.y*2.0);
-    float wave3 = sin((st.x + st.y + u_time*0.15)*6.0);
+    // subtle mouse offset
+    vec2 mouseOffset = (u_mouse - 0.5) * 0.1; // gentle parallax
+    st += mouseOffset;
 
-    float morph = (wave1 + wave2 + wave3)/3.0; // combine layers
-    morph = morph*0.5 + 0.5; // normalize 0-1
+    // slow base morphing waves
+    float wave1 = sin((st.y + u_time*0.05) * 5.0 + st.x*3.0);
+    float wave2 = cos((st.x + u_time*0.03) * 4.0 + st.y*2.0);
+    float wave3 = sin((st.x + st.y + u_time*0.04)*6.0);
 
-    // Smooth color blending
+    float morph = (wave1 + wave2 + wave3)/3.0;
+    morph = morph*0.5 + 0.5;
+
+    // smooth color blending
     vec3 color = mix(u_color1, u_color2, smoothstep(0.0,0.5,morph));
     color = mix(color, u_color3, smoothstep(0.3,0.7,morph));
     color = mix(color, u_color4, smoothstep(0.5,1.0,morph));
 
-    // Noise overlay
-    color += vec3(noise(st*10.0 + u_time) * u_noiseAmount);
+    // subtle noise overlay
+    color += vec3(noise(st*10.0 + u_time)*u_noiseAmount);
 
     gl_FragColor = vec4(color,1.0);
 }
@@ -74,7 +77,7 @@ void main(){
 const uniforms = {
     u_time: { value: 0 },
     u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-    u_mouse: { value: new THREE.Vector2(0,0) },
+    u_mouse: { value: new THREE.Vector2(0.5,0.5) },
     u_color1: { value: new THREE.Color("#16254b") },
     u_color2: { value: new THREE.Color("#23418a") },
     u_color3: { value: new THREE.Color("#aadfd9") },
