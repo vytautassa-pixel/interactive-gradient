@@ -1,48 +1,15 @@
-:root {
-  --x1: 50%;
-  --y1: 50%;
-  --x2: 50%;
-  --y2: 50%;
-  --x3: 50%;
-  --y3: 50%;
-
-  --c1: #ff6b6b;
-  --c2: #5f27cd;
-  --c3: #1dd1a1;
-}
-
-* {
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
-  height: 100vh;
-  background: #050505;
-  font-family: Inter, system-ui, sans-serif;
   overflow: hidden;
+  height: 100vh;
+  font-family: Inter, system-ui, sans-serif;
+  background: #050505;
 }
 
-/* ===== Gradient ===== */
-.gradient {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(600px at var(--x1,50%) var(--y1,50%), var(--c1), transparent 60%),
-    radial-gradient(800px at var(--x2,50%) var(--y2,50%), var(--c2), transparent 65%),
-    radial-gradient(1000px at var(--x3,50%) var(--y3,50%), var(--c3), #050505 70%);
-  filter: blur(40px) saturate(140%);
-  transform: scale(1.1);
-}
-
-.gradient-noise {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-radial-gradient(circle, rgba(255,255,255,0.02) 0 1px, transparent 2px);
-  z-index: 5;
-  opacity: 0;
-  transition: opacity 0.5s;
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* ===== UI ===== */
@@ -50,9 +17,9 @@ body {
   position: fixed;
   top: 24px;
   left: 24px;
-  width: 260px;
+  width: 280px;
   padding: 16px;
-  background: rgba(15, 15, 15, 0.6);
+  background: rgba(15,15,15,0.6);
   backdrop-filter: blur(20px);
   border-radius: 16px;
   color: white;
@@ -67,7 +34,7 @@ body {
 
 label {
   font-size: 12px;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .colors {
@@ -83,12 +50,7 @@ input[type="color"] {
   cursor: pointer;
 }
 
-input[type="range"] {
-  width: 100%;
-}
-
 button {
-  margin-top: 8px;
   height: 36px;
   border-radius: 10px;
   border: none;
