@@ -1,5 +1,5 @@
 // ===========================
-// Setup Three.js
+// Three.js setup
 // ===========================
 const canvas = document.getElementById("gradient-canvas");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -31,10 +31,11 @@ uniform vec3 u_color2;
 uniform vec3 u_color3;
 uniform vec3 u_color4;
 uniform float u_noiseAmount;
+
 varying vec2 vUv;
 
-// Classic value noise
-float rand(vec2 n){ return fract(sin(dot(n, vec2(12.9898, 4.1414)))*43758.5453); }
+// Value noise functions
+float rand(vec2 n){ return fract(sin(dot(n, vec2(12.9898,4.1414)))*43758.5453); }
 float noise(vec2 p){
     vec2 ip = floor(p);
     vec2 u = fract(p); u = u*u*(3.0-2.0*u);
@@ -45,22 +46,23 @@ float noise(vec2 p){
 }
 
 void main(){
-    vec2 st = vUv;
-    st -= 0.5;
+    vec2 st = vUv - 0.5; // center
 
-    // Wavy bands
-    float wave = sin((st.y + u_time*0.2)*4.5 + u_mouse.x*2.0) * 0.5 + 0.5;
-    float band1 = smoothstep(0.0, 0.3, wave);
-    float band2 = smoothstep(0.2, 0.6, wave);
-    float band3 = smoothstep(0.5, 0.8, wave);
+    // Multi-layer oscillating displacement for liquid effect
+    float wave1 = sin((st.y + u_time*0.2) * 5.0 + st.x*3.0);
+    float wave2 = cos((st.x + u_time*0.3) * 4.0 + st.y*2.0);
+    float wave3 = sin((st.x + st.y + u_time*0.15)*6.0);
 
-    // Color blending
-    vec3 color = mix(u_color1, u_color2, band1);
-    color = mix(color, u_color3, band2);
-    color = mix(color, u_color4, band3);
+    float morph = (wave1 + wave2 + wave3)/3.0; // combine layers
+    morph = morph*0.5 + 0.5; // normalize 0-1
+
+    // Smooth color blending
+    vec3 color = mix(u_color1, u_color2, smoothstep(0.0,0.5,morph));
+    color = mix(color, u_color3, smoothstep(0.3,0.7,morph));
+    color = mix(color, u_color4, smoothstep(0.5,1.0,morph));
 
     // Noise overlay
-    color += vec3(noise(st*10.0 + u_time)*u_noiseAmount);
+    color += vec3(noise(st*10.0 + u_time) * u_noiseAmount);
 
     gl_FragColor = vec4(color,1.0);
 }
@@ -96,7 +98,6 @@ window.addEventListener("mousemove", e => {
     uniforms.u_mouse.value.x = e.clientX / window.innerWidth;
     uniforms.u_mouse.value.y = 1 - e.clientY / window.innerHeight;
 });
-
 window.addEventListener("touchmove", e => {
     if(e.touches.length>0){
         uniforms.u_mouse.value.x = e.touches[0].clientX / window.innerWidth;
