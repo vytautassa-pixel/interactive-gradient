@@ -34,46 +34,63 @@ uniform float u_noiseAmount;
 
 varying vec2 vUv;
 
-// Value noise
-float rand(vec2 n){ return fract(sin(dot(n, vec2(12.9898,4.1414)))*43758.5453); }
+/* ------------------ Noise ------------------ */
+float rand(vec2 n) {
+    return fract(sin(dot(n, vec2(12.9898,78.233))) * 43758.5453);
+}
+
 float noise(vec2 p){
-    vec2 ip = floor(p);
-    vec2 u = fract(p); u = u*u*(3.0-2.0*u);
-    return mix(
-        mix(rand(ip), rand(ip + vec2(1.0,0.0)), u.x),
-        mix(rand(ip + vec2(0.0,1.0)), rand(ip + vec2(1.0,1.0)), u.x), u.y
-    );
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f*f*(3.0-2.0*f);
+
+    float a = rand(i);
+    float b = rand(i + vec2(1.0,0.0));
+    float c = rand(i + vec2(0.0,1.0));
+    float d = rand(i + vec2(1.0,1.0));
+
+    return mix(mix(a,b,f.x), mix(c,d,f.x), f.y);
 }
 
-void main(){
-    vec2 st = vUv - 0.5;
+/* ------------------ Domain Warp ------------------ */
+vec2 warp(vec2 p, vec2 mouse, float time) {
+    float n1 = noise(p * 2.5 + time * 0.05);
+    float n2 = noise(p * 3.5 - time * 0.04);
 
-    // per-color subtle mouse offsets
-    vec2 mo1 = (u_mouse - 0.5) * 0.02;
-    vec2 mo2 = (u_mouse - 0.5) * 0.03;
-    vec2 mo3 = (u_mouse - 0.5) * 0.025;
-    vec2 mo4 = (u_mouse - 0.5) * 0.015;
+    vec2 mouseInfluence = (mouse - 0.5) * 0.25;
+    vec2 warpOffset = vec2(n1, n2) * 0.15;
 
-    // Per-layer waves
-    float wave1 = sin((st.y + u_time*0.05) * 5.0 + st.x*3.0 + mo1.x + mo1.y);
-    float wave2 = cos((st.x + u_time*0.03) * 4.0 + st.y*2.0 + mo2.x - mo2.y);
-    float wave3 = sin((st.x + st.y + u_time*0.04)*6.0 + mo3.x - mo3.y);
-    float wave4 = cos((st.x - st.y + u_time*0.045)*5.5 + mo4.x + mo4.y);
-
-    // Combine waves for smooth morph
-    float morph = (wave1 + wave2 + wave3 + wave4)/4.0;
-    morph = morph*0.5 + 0.5;
-
-    // Smooth color blending
-    vec3 color = mix(u_color1, u_color2, smoothstep(0.0,0.5,wave1));
-    color = mix(color, u_color3, smoothstep(0.3,0.7,wave2));
-    color = mix(color, u_color4, smoothstep(0.5,1.0,wave3));
-
-    // subtle noise overlay
-    color += vec3(noise(st*10.0 + u_time)*u_noiseAmount);
-
-    gl_FragColor = vec4(color,1.0);
+    return p + warpOffset + mouseInfluence * vec2(n2, n1);
 }
+
+void main() {
+    vec2 uv = vUv;
+
+    /* subtle autonomous motion */
+    uv += vec2(
+        sin(u_time * 0.03),
+        cos(u_time * 0.025)
+    ) * 0.02;
+
+    /* domain warp driven by mouse */
+    vec2 warped = warp(uv, u_mouse, u_time);
+
+    /* layered gradient sampling */
+    float g1 = smoothstep(0.0, 0.4, warped.y + noise(warped*2.0)*0.15);
+    float g2 = smoothstep(0.3, 0.7, warped.x + noise(warped*3.0)*0.15);
+    float g3 = smoothstep(0.5, 1.0, warped.y + noise(warped*4.0)*0.15);
+
+    vec3 color = u_color1;
+    color = mix(color, u_color2, g1);
+    color = mix(color, u_color3, g2);
+    color = mix(color, u_color4, g3);
+
+    /* film grain */
+    color += noise(warped * 12.0 + u_time) * u_noiseAmount;
+
+    gl_FragColor = vec4(color, 1.0);
+}
+
 `;
 
 // ===========================
