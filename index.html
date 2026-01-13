@@ -7,16 +7,20 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <canvas id="gradient-canvas"></canvas>
 
-  <!-- Optional UI -->
-  <div class="ui">
-    <input type="color" id="c1" value="#f25c29">
-    <input type="color" id="c2" value="#020918">
-    <input type="color" id="c3" value="#d6d6dc">
-    <input type="color" id="c4" value="#f27b4b">
-  </div>
+<canvas id="gradient-canvas"></canvas>
 
-  <script type="module" src="gradient.js"></script>
+<div class="ui">
+  <input type="color" id="c1" value="#f25c29">
+  <input type="color" id="c2" value="#020918">
+  <input type="color" id="c3" value="#d6d6dc">
+  <input type="color" id="c4" value="#f27b4b">
+  <label>
+    <input type="checkbox" id="noiseToggle" checked>
+    noise
+  </label>
+</div>
+
+<script type="module" src="gradient.js"></script>
 </body>
 </html>
