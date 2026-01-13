@@ -29,7 +29,7 @@ uniform vec3 u_color4;
 uniform float u_grain;
 varying vec2 vUv;
 
-// hash and noise functions
+// Hash and noise functions
 float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float noise(vec2 p){ vec2 i=floor(p); vec2 f=fract(p); f=f*f*(3.0-2.0*f);
 float a=hash(i); float b=hash(i+vec2(1.,0.)); float c=hash(i+vec2(0.,1.)); float d=hash(i+vec2(1.,1.));
@@ -39,35 +39,34 @@ float fbm(vec2 p){ float v=0.0; float a=0.5; for(int i=0;i<6;i++){ v+=a*noise(p)
 void main(){
     vec2 uv = vUv;
 
-    // subtle drift
-    uv += vec2(sin(u_time*0.05), cos(u_time*0.07))*0.02;
-
-    // mouse-driven distortion
+    // Local mouse distortion
     vec2 diff = uv - u_mouse;
     float strength = exp(-length(diff*12.0));
     vec2 force = u_velocity * strength * 0.25;
     uv += force;
 
-    // multiple noise layers for shapeless blobs
-    float n1 = fbm(uv*2.0 + u_time*0.05);
-    float n2 = fbm(uv*3.0 + u_time*0.07 + 10.0);
-    float n3 = fbm(uv*4.0 + u_time*0.1 + 20.0);
-    float n4 = fbm(uv*5.0 + u_time*0.12 + 30.0);
+    // Multiple noise layers to create shapeless liquid blobs
+    float n1 = fbm(uv*2.0 + vec2(u_time*0.03, u_time*0.02));
+    float n2 = fbm(uv*3.0 + vec2(u_time*0.04, u_time*0.025) + 10.0);
+    float n3 = fbm(uv*4.0 + vec2(u_time*0.05, u_time*0.03) + 20.0);
+    float n4 = fbm(uv*5.0 + vec2(u_time*0.06, u_time*0.035) + 30.0);
 
+    // Normalize weights
     float sum = n1+n2+n3+n4+0.0001;
     n1/=sum; n2/=sum; n3/=sum; n4/=sum;
 
+    // Combine colors
     vec3 color = n1*u_color1 + n2*u_color2 + n3*u_color3 + n4*u_color4;
 
-    // vignette
-    float dist = length(uv-0.5);
+    // Vignette for cinematic depth
+    float dist = length(vUv-0.5);
     color *= smoothstep(0.8,0.2,dist);
 
-    // grain
+    // Film grain
     float grain = noise(gl_FragCoord.xy*0.9 + u_time*60.0);
     color += grain*u_grain;
 
-    // gamma correction
+    // Gentle gamma correction
     color = pow(color, vec3(1.2));
 
     gl_FragColor = vec4(color,1.0);
