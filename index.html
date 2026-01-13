@@ -1,58 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Organic Liquid Gradient</title>
-<style>
-:root {
-  --ui-bg: rgba(20,20,25,0.6);
-  --ui-border: rgba(255,255,255,0.08);
-  --ui-radius: 12px;
-  --ui-blur: blur(12px);
-}
-* { box-sizing:border-box; }
-html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; font-family:Inter,sans-serif;}
-canvas { position:fixed; inset:0; width:100%; height:100%; display:block; }
-
-.ui {
-  position: fixed;
-  top:24px;
-  left:24px;
-  padding:16px;
-  background: var(--ui-bg);
-  backdrop-filter: var(--ui-blur);
-  border-radius: var(--ui-radius);
-  border:1px solid var(--ui-border);
-  display:grid;
-  gap:12px;
-  z-index:10;
-}
-
-.ui-row { display:flex; gap:8px; align-items:center; }
-.ui label { font-size:12px; color:#bbb; min-width:48px; }
-.ui input[type="color"] { border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; }
-.ui input[type="checkbox"] { accent-color:white; }
-.ui small { font-size:11px; opacity:0.6; }
-</style>
+  <meta charset="UTF-8">
+  <title>Fluid Gradient</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/addons/p5.sound.min.js"></script>
+  <style>
+    body { margin:0; overflow:hidden; }
+    canvas { display:block; }
+  </style>
 </head>
 <body>
-<canvas id="gradient-canvas"></canvas>
+<script id="fragShader" type="x-shader/x-fragment">
+#ifdef GL_ES
+precision mediump float;
+#endif
 
-<div class="ui">
-  <div class="ui-row">
-    <label>C1</label><input type="color" id="c1" value="#f25c29">
-    <label>C2</label><input type="color" id="c2" value="#030d27">
-  </div>
-  <div class="ui-row">
-    <label>C3</label><input type="color" id="c3" value="#d0d0d5">
-    <label>C4</label><input type="color" id="c4" value="#f27b4b">
-  </div>
-  <div class="ui-row">
-    <input type="checkbox" id="noiseToggle" checked>
-    <small>Film grain</small>
-  </div>
-</div>
+uniform vec2 u_resolution;
+uniform float u_time;
 
-<script type="module" src="gradient.js"></script>
+// Simplex noise functions
+vec3 permute(vec3 x){ return mod(((x*34.0)+1.0)*x, 289.0); }
+float snoise(vec2 v){
+  const vec4 C = vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
+  vec2 i  = floor(v + dot(v, C.yy) );
+  vec2 x0 = v - i + dot(i, C.xx);
+  vec2 i1;
+  i1 = (x0.x > x0.y) ? vec2(1.0,0.0) : vec2(0.0,1.0);
+  vec4 x12 = x0.xyxy + C.xxzz;
+  x12.xy -= i1;
+  i = mod(i, 289.0);
+  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+  m = m*m; m = m*m;
+  vec3 x = 2.0 * fract(p * C.www) - 1.0;
+  vec3 h = abs(x) - 0.5;
+  vec3 ox = floor(x + 0.5);
+  vec3 a0 = x - ox;
+  m *= 1.79284291400159 - 0.85373472095314 * (a0*a0+h*h);
+  vec3 g;
+  g.x = a0.x * x0.x + h.x * x0.y;
+  g.y = a0.y * x12.x + h.y * x12.y;
+  g.z = a0.z * x12.z + h.z * x12.w;
+  return 130.0 * dot(m, g);
+}
+
+void main(){
+  vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+  uv *= 2.0; // scale
+  float t = u_time * 0.05; // slow motion
+  float n = snoise(uv + vec2(t, t*0.7));
+
+  // Color palette mapping
+  vec3 color1 = vec3(0.09,0.15,0.23);   // dark blue
+  vec3 color2 = vec3(0.85,0.6,0.3);     // orange-ish
+  vec3 color3 = vec3(0.35,0.6,0.75);    // muted cyan
+
+  vec3 col;
+  if(n < 0.33){
+    col = mix(color1, color3, n/0.33);
+  } else if(n < 0.66){
+    col = mix(color3, color2, (n-0.33)/0.33);
+  } else {
+    col = mix(color2, color1, (n-0.66)/0.34);
+  }
+
+  gl_FragColor = vec4(col,1.0);
+}
+</script>
+
+<script>
+let theShader;
+
+function preload(){
+  theShader = new p5.Shader(this._renderer, undefined, document.getElementById('fragShader').textContent);
+}
+
+function setup(){
+  createCanvas(windowWidth, windowHeight, WEBGL);
+  noStroke();
+  shader(theShader);
+}
+
+function draw(){
+  theShader.setUniform('u_resolution',[width, height]);
+  theShader.setUniform('u_time', millis()/1000);
+  rect(-width/2, -height/2, width, height);
+}
+
+function windowResized(){
+  resizeCanvas(windowWidth, windowHeight);
+}
+</script>
 </body>
 </html>
