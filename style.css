@@ -9,7 +9,6 @@ html, body {
   height: 100%;
   overflow: hidden;
   background: #000;
-  font-family: system-ui, sans-serif;
 }
 
 #gradient-canvas {
@@ -25,15 +24,25 @@ html, body {
   bottom: 16px;
   left: 16px;
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   z-index: 10;
+  background: rgba(0,0,0,0.3);
+  padding: 8px 10px;
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
 }
 
-.ui input {
-  width: 32px;
-  height: 32px;
+.ui input[type="color"] {
+  width: 28px;
+  height: 28px;
   border: none;
-  padding: 0;
   background: none;
   cursor: pointer;
+}
+
+.ui label {
+  color: #fff;
+  font-size: 12px;
+  user-select: none;
 }
