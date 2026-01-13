@@ -2,130 +2,141 @@ import * as THREE from 'https://cdn.skypack.dev/three@0.152.2'
 
 const canvas = document.getElementById('gradient-canvas')
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true })
-renderer.setSize(window.innerWidth, window.innerHeight)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))
+renderer.setSize(innerWidth, innerHeight)
+renderer.setPixelRatio(Math.min(devicePixelRatio,2))
 
 const scene = new THREE.Scene()
 const camera = new THREE.Camera()
-const geometry = new THREE.PlaneGeometry(2,2)
+const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2,2))
+scene.add(mesh)
 
-// ------------------ SHADERS ------------------
 const vertexShader = `
 varying vec2 vUv;
-void main(){ vUv = uv; gl_Position = vec4(position,1.0); }
+void main(){
+  vUv = uv;
+  gl_Position = vec4(position,1.);
+}
 `
 
 const fragmentShader = `
 precision highp float;
 
-uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec2 u_mouse;
 uniform vec2 u_velocity;
-uniform vec3 u_color1;
-uniform vec3 u_color2;
-uniform vec3 u_color3;
-uniform vec3 u_color4;
+uniform vec3 c1;
+uniform vec3 c2;
+uniform vec3 c3;
+uniform vec3 c4;
 uniform float u_grain;
+
 varying vec2 vUv;
 
-// Hash and noise functions
-float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-float noise(vec2 p){ vec2 i=floor(p); vec2 f=fract(p); f=f*f*(3.0-2.0*f);
-float a=hash(i); float b=hash(i+vec2(1.,0.)); float c=hash(i+vec2(0.,1.)); float d=hash(i+vec2(1.,1.));
-return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}
-float fbm(vec2 p){ float v=0.0; float a=0.5; for(int i=0;i<6;i++){ v+=a*noise(p); p*=2.; a*=0.5; } return v; }
+// --- HASH / NOISE ---
+float hash(vec2 p){
+  p = fract(p*vec2(123.34,456.21));
+  p += dot(p,p+78.233);
+  return fract(p.x*p.y);
+}
+
+float noise(vec2 p){
+  vec2 i=floor(p), f=fract(p);
+  f=f*f*(3.-2.*f);
+  float a=hash(i);
+  float b=hash(i+vec2(1,0));
+  float c=hash(i+vec2(0,1));
+  float d=hash(i+vec2(1,1));
+  return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);
+}
+
+// --- DOMAIN WARP ---
+vec2 warp(vec2 p,float t){
+  float n1=noise(p*2.5+t);
+  float n2=noise(p*3.5-t);
+  return p + vec2(n1,n2)*0.35;
+}
 
 void main(){
-    vec2 uv = vUv;
+  vec2 uv=vUv;
 
-    // Local mouse distortion
-    vec2 diff = uv - u_mouse;
-    float strength = exp(-length(diff*12.0));
-    vec2 force = u_velocity * strength * 0.25;
-    uv += force;
+  // Mouse force (LOCAL distortion, not movement)
+  vec2 m=uv-u_mouse;
+  float md=exp(-dot(m,m)*20.);
+  uv+=u_velocity*md*0.15;
 
-    // Multiple noise layers to create shapeless liquid blobs
-    float n1 = fbm(uv*2.0 + vec2(u_time*0.03, u_time*0.02));
-    float n2 = fbm(uv*3.0 + vec2(u_time*0.04, u_time*0.025) + 10.0);
-    float n3 = fbm(uv*4.0 + vec2(u_time*0.05, u_time*0.03) + 20.0);
-    float n4 = fbm(uv*5.0 + vec2(u_time*0.06, u_time*0.035) + 30.0);
+  // MULTI DOMAIN WARP (THIS IS LIQUID)
+  uv=warp(uv,u_time*0.05);
+  uv=warp(uv,u_time*0.08);
+  uv=warp(uv,u_time*0.11);
 
-    // Normalize weights
-    float sum = n1+n2+n3+n4+0.0001;
-    n1/=sum; n2/=sum; n3/=sum; n4/=sum;
+  // Scalar fields (NOT clouds)
+  float f1=noise(uv*1.2+10.);
+  float f2=noise(uv*1.4+20.);
+  float f3=noise(uv*1.6+30.);
+  float f4=noise(uv*1.8+40.);
 
-    // Combine colors
-    vec3 color = n1*u_color1 + n2*u_color2 + n3*u_color3 + n4*u_color4;
+  // Sharpen into oily bands
+  f1=smoothstep(0.2,0.8,f1);
+  f2=smoothstep(0.2,0.8,f2);
+  f3=smoothstep(0.2,0.8,f3);
+  f4=smoothstep(0.2,0.8,f4);
 
-    // Vignette for cinematic depth
-    float dist = length(vUv-0.5);
-    color *= smoothstep(0.8,0.2,dist);
+  float sum=f1+f2+f3+f4+0.0001;
+  vec3 col =
+    (f1*c1 +
+     f2*c2 +
+     f3*c3 +
+     f4*c4) / sum;
 
-    // Film grain
-    float grain = noise(gl_FragCoord.xy*0.9 + u_time*60.0);
-    color += grain*u_grain;
+  // Vignette
+  float v=1.-length(vUv-.5)*1.3;
+  col*=clamp(v,0.,1.);
 
-    // Gentle gamma correction
-    color = pow(color, vec3(1.2));
+  // Film grain
+  float g=noise(gl_FragCoord.xy*0.8+u_time*40.);
+  col+=g*u_grain;
 
-    gl_FragColor = vec4(color,1.0);
+  // Contrast curve (oil look)
+  col=pow(col,vec3(1.35));
+
+  gl_FragColor=vec4(col,1.);
 }
 `
 
-// ------------------ UNIFORMS ------------------
 const uniforms = {
-    u_time: { value:0 },
-    u_resolution: { value:new THREE.Vector2(window.innerWidth,window.innerHeight) },
-    u_velocity: { value:new THREE.Vector2(0,0) },
-    u_mouse: { value:new THREE.Vector2(0.5,0.5) },
-    u_color1: { value:new THREE.Color('#f25c29') },
-    u_color2: { value:new THREE.Color('#030d27') },
-    u_color3: { value:new THREE.Color('#d0d0d5') },
-    u_color4: { value:new THREE.Color('#f27b4b') },
-    u_grain: { value:0.08 }
+  u_time:{value:0},
+  u_mouse:{value:new THREE.Vector2(.5,.5)},
+  u_velocity:{value:new THREE.Vector2()},
+  u_grain:{value:0.06},
+  c1:{value:new THREE.Color('#f25c29')},
+  c2:{value:new THREE.Color('#020918')},
+  c3:{value:new THREE.Color('#d6d6dc')},
+  c4:{value:new THREE.Color('#f27b4b')}
 }
 
-const material = new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader })
-scene.add(new THREE.Mesh(geometry,material))
-
-// ------------------ MOUSE / TOUCH ------------------
-let lastMouse = {x:0.5,y:0.5}, velocity={x:0,y:0}
-const damping = 0.85
-function onPointerMove(e){
-    const x = e.clientX/window.innerWidth
-    const y = 1.0 - e.clientY/window.innerHeight
-    velocity.x += (x-lastMouse.x)*5.0
-    velocity.y += (y-lastMouse.y)*5.0
-    lastMouse.x = x
-    lastMouse.y = y
-    uniforms.u_mouse.value.set(x,y)
-}
-window.addEventListener('mousemove', onPointerMove)
-window.addEventListener('touchmove', e=>onPointerMove(e.touches[0]),{passive:true})
-
-// ------------------ UI ------------------
-function updateColor(id,uniform){
-    document.getElementById(id).addEventListener('input',e=>{
-        uniforms[uniform].value.set(e.target.value)
-    })
-}
-updateColor('c1','u_color1')
-updateColor('c2','u_color2')
-updateColor('c3','u_color3')
-updateColor('c4','u_color4')
-
-document.getElementById('noiseToggle').addEventListener('change',e=>{
-    uniforms.u_grain.value = e.target.checked?0.08:0.0
+mesh.material=new THREE.ShaderMaterial({
+  uniforms,
+  vertexShader,
+  fragmentShader
 })
 
-// ------------------ ANIMATE ------------------
+// ---- INTERACTION ----
+let last={x:.5,y:.5},vel={x:0,y:0}
+addEventListener('pointermove',e=>{
+  const x=e.clientX/innerWidth
+  const y=1-e.clientY/innerHeight
+  vel.x+=(x-last.x)*4
+  vel.y+=(y-last.y)*4
+  last={x,y}
+  uniforms.u_mouse.value.set(x,y)
+})
+
 function animate(t){
-    uniforms.u_time.value = t*0.001
-    velocity.x *= damping
-    velocity.y *= damping
-    uniforms.u_velocity.value.set(velocity.x, velocity.y)
-    renderer.render(scene,camera)
-    requestAnimationFrame(animate)
+  uniforms.u_time.value=t*.001
+  vel.x*=.85
+  vel.y*=.85
+  uniforms.u_velocity.value.set(vel.x,vel.y)
+  renderer.render(scene,camera)
+  requestAnimationFrame(animate)
 }
 animate()
