@@ -90,10 +90,6 @@ void main(){
     c4*f4
   ) / sum;
 
-  // Vignette
-  float v = 1.0 - length(vUv - 0.5) * 1.3;
-  col *= clamp(v,0.0,1.0);
-
   // Film grain (true random)
   float g = rand(gl_FragCoord.xy);
   col += g * 0.08 * u_noise;
